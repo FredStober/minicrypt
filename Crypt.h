@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2015 by Fred Stober
+ * Copyright (C) 2015 by Fred Stober
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,19 @@
  * THE SOFTWARE.
  */
 
-#ifndef TIGER_H
-#define TIGER_H
+#ifndef CRYPT_H
+#define CRYPT_H
 
-#include "Hash.h"
+#include <string>
 
-class Algorithm_Tiger : public PaddedHashAlgorithm
+enum struct DecodeError
 {
-public:
-	Algorithm_Tiger();
-	virtual void check() override;
-	virtual HashAlgorithm *clone() const override;
-	virtual const Hash *finish() override;
-	virtual const HashDescription *id() const override;
-	virtual const Hash *parse(const uint8_t *buffer) const override;
-	virtual const Hash *parse(const std::string str) const override;
-	virtual HashAlgorithm *processBuffer(const uint8_t *buffer, const size_t len) override;
-	virtual void reset() override;
-
-private:
-	class Hash_Tiger : public Hash
-	{
-	public:
-		virtual HashAlgorithm *algorithm() const override;
-		virtual const Hash *clone() const override;
-		virtual const uint8_t *data() const override;
-		virtual const HashDescription *id() const override;
-	private:
-		Hash_Tiger() = default;
-		Hash_Tiger(const uint64_t _internal[3]);
-		friend class Algorithm_Tiger;
-		uint64_t internal[3];
-	} _hash;
-	uint64_t nBytes;
-	uint32_t bufferOffset;
-	uint8_t buffer[64];
-
-	virtual void padHash() override;
+	NONE = 0,
+	TOO_SHORT,
+	TAMPERED
 };
+
+std::string encode(const std::string &in, const std::string &key);
+std::string decode(const std::string &in, const std::string &key, DecodeError *err);
 
 #endif

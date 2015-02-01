@@ -29,7 +29,7 @@
 
 int Hash::cmp(const Hash *hash) const
 {
-	return std::memcmp(this->data(), hash->data(), this->len());
+	return std::memcmp(this->data(), hash->data(), this->id()->len());
 }
 
 int Hash::cmpHash(const Hash *a, const Hash *b)
@@ -40,7 +40,7 @@ int Hash::cmpHash(const Hash *a, const Hash *b)
 const std::string Hash::str() const
 {
 	const uint8_t *digest = data();
-	const std::size_t length = len();
+	const std::size_t length = id()->len();
 	std::ostringstream out;
 	for (unsigned int i = 0; i < length; ++i)
 		out << std::hex << std::setfill('0') << std::setw(2) << (uint16_t)digest[i];
@@ -49,7 +49,7 @@ const std::string Hash::str() const
 
 std::ostream &operator<<(std::ostream &os, const Hash &h)
 {
-	return os << h.name() << ':' << h.str();
+	return os << h.id()->name() << ':' << h.str();
 }
 
 void checkHashCMP(const std::string &hashName, const size_t seg, const std::string &out, const std::string &ref)
@@ -71,10 +71,6 @@ void checkHashCMP2(const std::string &hashName, const Hash *h1, const Hash *h2)
 	exit(1);
 }
 
-HashAlgorithm::HashAlgorithm(const std::string &name, const std::size_t length) : _name(name), _length(length)
-{
-}
-
 void HashAlgorithm::checkHash(const std::string &input, std::string ref)
 {
 	const uint8_t *data = (const uint8_t*)(input.c_str());
@@ -83,23 +79,24 @@ void HashAlgorithm::checkHash(const std::string &input, std::string ref)
 	reset();
 	processBuffer(data, input.size());
 	const Hash *tmp = finish();
-	checkHashCMP(_name, input.size(), tmp->str(), ref);
+	const std::string name = tmp->id()->name();
+
+	checkHashCMP(name, input.size(), tmp->str(), ref);
 	const Hash *tmp_clone = tmp->clone();
-	checkHashCMP2(_name, tmp, tmp_clone);
+	checkHashCMP2(name, tmp, tmp_clone);
 	delete tmp;
-	checkHashCMP(_name, input.size(), tmp_clone->str(), ref);
+	checkHashCMP(name, input.size(), tmp_clone->str(), ref);
 	const Hash *tmp_parse_data = parse(tmp_clone->data());
-	checkHashCMP2(_name, tmp_clone, tmp_parse_data);
+	checkHashCMP2(name, tmp_clone, tmp_parse_data);
 	delete tmp_clone;
-	checkHashCMP(_name, input.size(), tmp_parse_data->str(), ref);
+	checkHashCMP(name, input.size(), tmp_parse_data->str(), ref);
 	const Hash *tmp_parse_str = parse(tmp_parse_data->str());
-	checkHashCMP2(_name, tmp_parse_str, tmp_parse_data);
+	checkHashCMP2(name, tmp_parse_str, tmp_parse_data);
 	delete tmp_parse_data;
-	checkHashCMP(_name, input.size(), tmp_parse_str->str(), ref);
+	checkHashCMP(name, input.size(), tmp_parse_str->str(), ref);
 	delete tmp_parse_str;
 
-	return;
-	for (size_t segment = 1; segment < 1024; ++segment)
+	for (size_t segment = 1; segment < 128; ++segment)
 	{
 		reset();
 		size_t offset = 0;
@@ -108,9 +105,9 @@ void HashAlgorithm::checkHash(const std::string &input, std::string ref)
 			processBuffer(data + offset, std::min(segment, input.size() - offset));
 			offset += segment;
 		} while (offset < input.size());
-		const Hash *tmp = finish();
-		checkHashCMP(_name, segment, tmp->str(), ref);
-		delete tmp;
+		const Hash *tmp_split = finish();
+		checkHashCMP(name, segment, tmp_split->str(), ref);
+		delete tmp_split;
 	}
 	reset();
 }
@@ -122,24 +119,9 @@ const Hash *HashAlgorithm::finish(const Hash *src)
 	return result;
 }
 
-const std::size_t HashAlgorithm::len() const
-{
-	return _length;
-}
-
-const std::string HashAlgorithm::name() const
-{
-	return _name;
-}
-
 HashAlgorithm *HashAlgorithm::process(const std::string &in)
 {
 	return processBuffer((uint8_t*)in.c_str(), in.size() * sizeof(in[0]));
-}
-
-PaddedHashAlgorithm::PaddedHashAlgorithm(const std::string &name, const std::size_t length)
-	: HashAlgorithm(name, length)
-{
 }
 
 const Hash *PaddedHashAlgorithm::finish(const Hash *src)

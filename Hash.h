@@ -23,21 +23,35 @@
 #ifndef HASH_H
 #define HASH_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
+#include <vector>
 
-class HashAlgorithm;
+class HashDescription
+{
+public:
+	HashDescription() = default;
+	virtual ~HashDescription() = default;
+	virtual const std::size_t len() const = 0;
+	virtual const std::string name() const = 0;
+	virtual class HashAlgorithm *algorithm() const = 0;
+
+private:
+	HashDescription(const HashDescription &) = delete;
+	HashDescription &operator=(const HashDescription &) = delete;
+	HashDescription(HashDescription &&) = delete;
+	HashDescription &operator=(HashDescription &&) = delete;
+};
 
 class Hash
 {
 public:
 	virtual ~Hash() = default;
-	virtual HashAlgorithm *algorithm() const = 0;
+	virtual class HashAlgorithm *algorithm() const = 0;
 	virtual const Hash *clone() const = 0;
 	int cmp(const Hash *hash) const;
 	virtual const uint8_t *data() const = 0;
-	virtual const std::size_t len() const = 0;
-	virtual const std::string name() const = 0;
+	virtual const HashDescription *id() const = 0;
 	const std::string str() const;
 
 	static int cmpHash(const Hash *a, const Hash *b);
@@ -60,8 +74,7 @@ public:
 	virtual void check() = 0;
 	virtual HashAlgorithm *clone() const = 0;
 	virtual const Hash *finish() = 0;
-	virtual const std::size_t len() const;
-	virtual const std::string name() const;
+	virtual const HashDescription *id() const = 0;
 	virtual const Hash *parse(const uint8_t *buffer) const = 0;
 	virtual const Hash *parse(const std::string str) const = 0;
 	virtual HashAlgorithm *processBuffer(const uint8_t *buffer, const size_t len) = 0;
@@ -90,20 +103,13 @@ public:
 	HashAlgorithm *process(const std::string &in);
 
 protected:
-	HashAlgorithm(const std::string &name, const std::size_t length);
 	void checkHash(const std::string &input, std::string ref);
 	virtual const Hash *finish(const Hash *src);
-private:
-	const std::string _name;
-	const std::size_t _length;
 };
-
 
 class PaddedHashAlgorithm : public HashAlgorithm
 {
 protected:
-	PaddedHashAlgorithm(const std::string &name, const std::size_t length);
-
 	virtual void padHash() = 0;
 	virtual const Hash *finish(const Hash *src) override;
 };

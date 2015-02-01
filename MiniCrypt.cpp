@@ -36,33 +36,8 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <functional>
-#include "Tiger.h"
-
-std::string code(const std::string &in, const std::string &key)
-{
-	Algorithm_Tiger tiger;
-	tiger.process(key + "\n");
-	tiger.process(std::to_string(in.size()));
-	const Hash *hash = tiger.finish();
-	const std::size_t hash_len = hash->len() / 8;
-
-	std::string result(in);
-	for (std::size_t i = 0; i < in.size(); ++i)
-	{
-		const std::size_t hash_idx = i % hash_len;
-		if ((i % hash_len) == (hash_len - 1))
-		{
-			tiger.process(hash->str() + "\n");
-			tiger.process(key + "\n");
-			tiger.process(std::to_string(in.size()));
-			delete hash;
-			hash = tiger.finish();
-		}
-		result[i] ^= (hash->data()[hash_idx]);
-	}
-	delete hash;
-	return result;
-}
+#include "Crypt.h"
+#include "I18N.h"
 
 std::string wx2str(const wxString &value)
 {
@@ -83,42 +58,45 @@ private:
 
 IMPLEMENT_APP(MiniCryptApp)
 
-MiniCryptApp* app;
-
 bool MiniCryptApp::OnInit()
 {
-	app = this;
+	wxLocale loc;
+	loc.Init();
+
 	wxIcon icon(minicrypt_ico);
-	dialog = new wxDialog(NULL, -1, wxGetTranslation(L"MiniCrypt"), wxDefaultPosition, wxSize(180,105),
+	dialog = new wxDialog(NULL, -1, myT(I18N_String::TITLE), wxDefaultPosition, wxDefaultSize,
 		wxDEFAULT_DIALOG_STYLE);
 	dialog->SetIcon(icon);
 
-	wxBoxSizer* bsTop = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* bsMain = new wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* stLabelTop = new wxStaticText(dialog, -1, wxGetTranslation(L"Password"));
-	bsTop->Add(stLabelTop, 0, wxALL, 2);
+	wxStaticText* stLabelTop = new wxStaticText(dialog, -1, myT(I18N_String::PASSWORD));
+	bsMain->Add(stLabelTop, 0, wxALL, 2);
 
 	key = new wxTextCtrl(dialog, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
-	bsTop->Add(key, 0, wxALL | wxEXPAND, 2);
+	bsMain->Add(key, 0, wxALL | wxEXPAND, 2);
 
 	wxBoxSizer* bsButton = new wxBoxSizer(wxHORIZONTAL);
 
-	wxButton* bEncrypt = new wxButton(dialog, -1, wxGetTranslation(L"Encode"));
+	wxButton* bEncrypt = new wxButton(dialog, -1, myT(I18N_String::ENCODE));
 	bEncrypt->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [=](wxCommandEvent&) { this->ProcessClipboard(MiniCryptApp::Encode); });
 	bsButton->Add(bEncrypt);
 
-	wxButton* bDecrypt = new wxButton(dialog, -1, wxGetTranslation(L"Decode"));
+	wxButton* bDecrypt = new wxButton(dialog, -1, myT(I18N_String::DECODE));
 	bDecrypt->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [=](wxCommandEvent&) { this->ProcessClipboard(MiniCryptApp::Decode); });
 	bsButton->Add(bDecrypt);
 
-	bsTop->Add(bsButton, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 2);
-	wxStaticText* stLabelBottom = new wxStaticText(dialog, -1,
-		wxGetTranslation(L"Encode/Decode clipboard content"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE);
-	wxFont font(7, wxROMAN, wxNORMAL, wxNORMAL, false);
+	bsMain->Add(bsButton, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 2);
+	wxStaticText* stLabelBottom = new wxStaticText(dialog, -1, myT(I18N_String::DESCRIPTION),
+		wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE);
+	stLabelBottom->Wrap(180);
+	wxFont font = dialog->GetFont();
+	font.MakeSmaller();
 	stLabelBottom->SetFont(font);
-	bsTop->Add(stLabelBottom, 1, wxTOP | wxALIGN_CENTER, 7);
+	bsMain->Add(stLabelBottom, 1, wxTOP | wxBOTTOM | wxALIGN_CENTER, 7);
 
-	dialog->SetSizer(bsTop);
+	dialog->SetSizer(bsMain);
+	dialog->Fit();
 	dialog->Layout();
 	dialog->ShowModal();
 	this->ExitMainLoop();
@@ -134,7 +112,7 @@ void MiniCryptApp::ProcessClipboard(std::function<wxString(wxString, std::string
 		{
 			wxTextDataObject data;
 			wxTheClipboard->GetData(data);
-			const wxString output = processor(data.GetText(), wx2str(app->key->GetValue()));
+			const wxString output = processor(data.GetText(), wx2str(key->GetValue()));
 			// clipboard takes ownership of wxTextDataObject!
 			wxTheClipboard->SetData(new wxTextDataObject(output));
 		}
@@ -145,7 +123,7 @@ void MiniCryptApp::ProcessClipboard(std::function<wxString(wxString, std::string
 
 wxString MiniCryptApp::Encode(const wxString &value, const std::string &key)
 {
-	const std::string data_enc = code(wx2str(value), key);
+	const std::string data_enc = encode(wx2str(value), key);
 	return wxBase64Encode(data_enc.data(), data_enc.size());
 }
 
@@ -154,6 +132,11 @@ wxString MiniCryptApp::Decode(const wxString &value, const std::string &key)
 	size_t posErr;
 	const wxMemoryBuffer buffer = wxBase64Decode(value, wxBase64DecodeMode_SkipWS, &posErr);
 	const std::string data_enc = std::string(static_cast<char*>(buffer.GetData()), buffer.GetDataLen());
-	const std::string data_dec = code(data_enc, key);
+	DecodeError err = DecodeError::NONE;
+	const std::string data_dec = decode(data_enc, key, &err);
+	if (err == DecodeError::TOO_SHORT)
+		wxLogError(myT(I18N_String::ERR_TOO_SHORT));
+	else if (err == DecodeError::TAMPERED)
+		wxLogError(myT(I18N_String::ERR_TAMPERED));
 	return wxString::FromUTF8(data_dec.data(), data_dec.size());
 }

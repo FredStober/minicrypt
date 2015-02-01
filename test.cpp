@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2015 by Fred Stober
+ * Copyright (C) 2015 by Fred Stober
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,33 @@
  * THE SOFTWARE.
  */
 
-#ifndef HASHTOOLS_H
-#define HASHTOOLS_H
+#include "Crypt.h"
+#include "HashTools.h"
+#include <cassert>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 
-#include <string>
-#include <cstdint>
-
-template<unsigned int SIZE>
-bool parseHex(const std::string &digest, uint8_t *hash)
+std::string hexify(const std::string &data)
 {
-	for (unsigned int i = 0; i < SIZE; ++i)
-	{
-		std::size_t pos = 0;
-		const std::string tmp = digest.substr(2*i, 2);
-		hash[i] = static_cast<uint8_t>(std::stoi(tmp, &pos, 16));
-	}
-	return true;
+	std::stringstream result;
+	for (std::size_t i = 0; i < data.size(); ++i)
+		result << std::hex << std::setw(2) << std::setfill('0')
+			<< static_cast<int>(static_cast<uint8_t>(data[i]));
+	return result.str();
 }
 
-#endif
+int main()
+{
+	std::string k = "Key";
+	std::string p = "Hello World!";
+	std::string e = encode(p, k);
+	std::cout << hexify(e) << std::endl;
+	DecodeError err = DecodeError::NONE;
+	std::string d = decode(e, k, &err);
+	std::cout << "------";
+	for (std::size_t i = 0; i < d.size(); ++i)
+		std::cout << d[i] << " ";
+	std::cout << std::endl;
+	assert(d == p);
+}

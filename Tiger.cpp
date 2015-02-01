@@ -20,11 +20,25 @@
  * THE SOFTWARE.
  */
 
-#include <cstring>
 #include "Tiger.h"
 #include "HashTools.h"
+#include <cstring>
 
-static const size_t TIGER_BLOCKSIZE = 64;
+static class HashDescription_Tiger : public HashDescription
+{
+	virtual const std::size_t len() const
+	{
+		return 24;
+	}
+	virtual const std::string name() const
+	{
+		return "Tiger";
+	}
+	virtual class HashAlgorithm *algorithm() const
+	{
+		return new Algorithm_Tiger();
+	}
+} Tiger_desc;
 
 /*
    Implementation of the TIGER Hash algorithm
@@ -552,6 +566,8 @@ static const uint64_t *TIGER_S2 = &(TIGER_TABLE[256 * 1]);
 static const uint64_t *TIGER_S3 = &(TIGER_TABLE[256 * 2]);
 static const uint64_t *TIGER_S4 = &(TIGER_TABLE[256 * 3]);
 
+static const size_t TIGER_BLOCKSIZE = 64;
+
 #define TIGER_ROUND(a, b, c, x, mul)              \
 {                                                 \
   c ^= x;                                         \
@@ -592,16 +608,16 @@ inline void tiger_compress(const uint8_t *str8, uint64_t state[3])
 			x0 -= x7 ^ 0xA5A5A5A5A5A5A5A5LL;
 			x1 ^= x0;
 			x2 += x1;
-			x3 -= x2 ^ ((~x1) << 19);
+			x3 -= x2 ^ ((~x1)<<19);
 			x4 ^= x3;
 			x5 += x4;
-			x6 -= x5 ^ ((~x4) >> 23);
+			x6 -= x5 ^ ((~x4)>>23);
 			x7 ^= x6;
 			x0 += x7;
-			x1 -= x0 ^ ((~x7) << 19);
+			x1 -= x0 ^ ((~x7)<<19);
 			x2 ^= x1;
 			x3 += x2;
-			x4 -= x3 ^ ((~x2) >> 23);
+			x4 -= x3 ^ ((~x2)>>23);
 			x5 ^= x4;
 			x6 += x5;
 			x7 -= x6 ^ 0x0123456789ABCDEFLL;
@@ -626,9 +642,9 @@ inline void tiger_compress(const uint8_t *str8, uint64_t state[3])
 	state[2] = c + state[2];
 }
 
-Algorithm_Tiger::Algorithm_Tiger() : PaddedHashAlgorithm(_hash.name(), _hash.len())
+Algorithm_Tiger::Algorithm_Tiger()
 {
-	reset();
+	Algorithm_Tiger::reset();
 }
 
 void Algorithm_Tiger::check()
@@ -657,6 +673,11 @@ HashAlgorithm *Algorithm_Tiger::clone() const
 const Hash *Algorithm_Tiger::finish()
 {
 	return PaddedHashAlgorithm::finish(&_hash);
+}
+
+const HashDescription *Algorithm_Tiger::id() const
+{
+	return &Tiger_desc;
 }
 
 void Algorithm_Tiger::padHash()
@@ -751,4 +772,9 @@ const Hash *Algorithm_Tiger::Hash_Tiger::clone() const
 const uint8_t *Algorithm_Tiger::Hash_Tiger::data() const
 {
 	return (uint8_t*)&internal;
+}
+
+const HashDescription *Algorithm_Tiger::Hash_Tiger::id() const
+{
+	return &Tiger_desc;
 }
