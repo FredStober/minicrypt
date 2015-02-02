@@ -734,7 +734,7 @@ HashAlgorithm *Algorithm_Tiger::processBuffer(const uint8_t *input, const size_t
 	}
 
 	// Copy leftover data from input to buffer
-	while (input < inputEnd)
+	while ((input < inputEnd) && (bufferOffset < TIGER_BLOCKSIZE))
 		buffer[bufferOffset++] = *(input++);
 	if (bufferOffset == TIGER_BLOCKSIZE)
 	{

@@ -22,8 +22,8 @@
 
 #include "minicrypt.xpm"
 #include <wx/setup.h>
-#include <wx/base64.h>
 #include <wx/app.h>
+#include <wx/base64.h>
 #include <wx/buffer.h>
 #include <wx/dataobj.h>
 #include <wx/button.h>

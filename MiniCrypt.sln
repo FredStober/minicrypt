@@ -1,6 +1,8 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiniCrypt", "MiniCrypt.vcproj", "{31C1AD42-0BA3-4FB6-80E0-C299DB32E850}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiniCrypt", "MiniCrypt.vcxproj", "{31C1AD42-0BA3-4FB6-80E0-C299DB32E850}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
