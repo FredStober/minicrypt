@@ -1,8 +1,12 @@
 #include "I18N.h"
-#include <wx/intl.h>
 #include <vector>
 #include <map>
 #include <functional>
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+#endif
 
 // Using embedded translations to have everything in a single executable
 
@@ -46,3 +50,7 @@ const wxString myT(const I18N_String str)
 						result = i18n_trans.second;
 	return result;
 }
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif

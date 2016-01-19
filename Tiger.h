@@ -53,8 +53,8 @@ private:
 		uint64_t internal[3];
 	} _hash;
 	uint64_t nBytes;
-	uint32_t bufferOffset;
 	uint8_t buffer[64];
+	uint32_t bufferOffset;
 
 	virtual void padHash() override;
 };

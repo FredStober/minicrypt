@@ -31,8 +31,8 @@ class HashDescription
 {
 public:
 	HashDescription() = default;
-	virtual ~HashDescription() = default;
-	virtual const std::size_t len() const = 0;
+	virtual ~HashDescription();
+	virtual std::size_t len() const = 0;
 	virtual const std::string name() const = 0;
 	virtual class HashAlgorithm *algorithm() const = 0;
 
@@ -52,7 +52,7 @@ public:
 	int cmp(const Hash *hash) const;
 	virtual const uint8_t *data() const = 0;
 	virtual const HashDescription *id() const = 0;
-	const std::string str() const;
+	const virtual std::string str() const;
 
 	static int cmpHash(const Hash *a, const Hash *b);
 };
@@ -85,11 +85,11 @@ public:
 	HashAlgorithm *processStream(Stream &is)
 	{
 		const int maxCount = 1024 * 1024 * 2;
-		char *buffer = new char[maxCount];
+		uint8_t *buffer = new uint8_t[maxCount];
 		while (is)
 		{
 			is.read(buffer, maxCount);
-			if (processBuffer((uint8_t*)buffer, is.gcount()) == nullptr)
+			if (processBuffer(buffer, is.gcount()) == nullptr)
 				return nullptr;
 		}
 		delete [] buffer;
@@ -98,20 +98,20 @@ public:
 	template<typename InputIterator>
 	HashAlgorithm *process(InputIterator start, InputIterator end)
 	{
-		return processBuffer((uint8_t*)&(*start), (end - start) * sizeof(*start));
+		return processBuffer(reinterpret_cast<uint8_t*>(&(*start)), (end - start) * sizeof(*start));
 	}
 	HashAlgorithm *process(const std::string &in);
 
 protected:
 	void checkHash(const std::string &input, std::string ref);
-	virtual const Hash *finish(const Hash *src);
+	virtual const Hash *finish_clone(const Hash *src);
 };
 
 class PaddedHashAlgorithm : public HashAlgorithm
 {
 protected:
 	virtual void padHash() = 0;
-	virtual const Hash *finish(const Hash *src) override;
+	virtual const Hash *finish_clone(const Hash *src) override;
 };
 
 #endif

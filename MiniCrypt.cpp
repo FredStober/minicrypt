@@ -21,25 +21,12 @@
  */
 
 #include "minicrypt.xpm"
-#include <wx/setup.h>
-#include <wx/app.h>
-#include <wx/base64.h>
-#include <wx/buffer.h>
-#include <wx/dataobj.h>
-#include <wx/button.h>
-#include <wx/clipbrd.h>
-#include <wx/dialog.h>
-#include <wx/icon.h>
-#include <wx/intl.h>
-#include <wx/log.h>
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-#include <wx/textctrl.h>
+#include "wx_include.h"
 #include <functional>
 #include "Crypt.h"
 #include "I18N.h"
 
-std::string wx2str(const wxString &value)
+static std::string wx2str(const wxString &value)
 {
 	const wxScopedCharBuffer data_utf8 = value.utf8_str();
 	return std::string(data_utf8.data(), data_utf8.length());
@@ -56,7 +43,15 @@ private:
 	wxTextCtrl *key;
 };
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
 IMPLEMENT_APP(MiniCryptApp)
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 bool MiniCryptApp::OnInit()
 {

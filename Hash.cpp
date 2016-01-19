@@ -27,6 +27,10 @@
 #include <sstream>
 #include <iomanip>
 
+HashDescription::~HashDescription()
+{
+}
+
 int Hash::cmp(const Hash *hash) const
 {
 	return std::memcmp(this->data(), hash->data(), this->id()->len());
@@ -43,7 +47,7 @@ const std::string Hash::str() const
 	const std::size_t length = id()->len();
 	std::ostringstream out;
 	for (unsigned int i = 0; i < length; ++i)
-		out << std::hex << std::setfill('0') << std::setw(2) << (uint16_t)digest[i];
+		out << std::hex << std::setfill('0') << std::setw(2) << uint16_t(digest[i]);
 	return out.str();
 }
 
@@ -52,7 +56,7 @@ std::ostream &operator<<(std::ostream &os, const Hash &h)
 	return os << h.id()->name() << ':' << h.str();
 }
 
-void checkHashCMP(const std::string &hashName, const size_t seg, const std::string &out, const std::string &ref)
+static void checkHashCMP(const std::string &hashName, const size_t seg, const std::string &out, const std::string &ref)
 {
 	if (out != ref)
 	{
@@ -63,7 +67,7 @@ void checkHashCMP(const std::string &hashName, const size_t seg, const std::stri
 		std::cerr << hashName << " OK (" << seg << ") checks " << out << std::endl;
 }
 
-void checkHashCMP2(const std::string &hashName, const Hash *h1, const Hash *h2)
+static void checkHashCMP2(const std::string &hashName, const Hash *h1, const Hash *h2)
 {
 	if (Hash::cmpHash(h1, h2) == 0)
 		return;
@@ -73,7 +77,7 @@ void checkHashCMP2(const std::string &hashName, const Hash *h1, const Hash *h2)
 
 void HashAlgorithm::checkHash(const std::string &input, std::string ref)
 {
-	const uint8_t *data = (const uint8_t*)(input.c_str());
+	const uint8_t *data = reinterpret_cast<const uint8_t*>(input.c_str());
 	std::transform(ref.begin(), ref.end(), ref.begin(), ::tolower);
 
 	reset();
@@ -112,7 +116,7 @@ void HashAlgorithm::checkHash(const std::string &input, std::string ref)
 	reset();
 }
 
-const Hash *HashAlgorithm::finish(const Hash *src)
+const Hash *HashAlgorithm::finish_clone(const Hash *src)
 {
 	const Hash *result = src->clone();
 	reset();
@@ -121,11 +125,11 @@ const Hash *HashAlgorithm::finish(const Hash *src)
 
 HashAlgorithm *HashAlgorithm::process(const std::string &in)
 {
-	return processBuffer((uint8_t*)in.c_str(), in.size() * sizeof(in[0]));
+	return processBuffer(reinterpret_cast<const uint8_t*>(in.c_str()), in.size() * sizeof(in[0]));
 }
 
-const Hash *PaddedHashAlgorithm::finish(const Hash *src)
+const Hash *PaddedHashAlgorithm::finish_clone(const Hash *src)
 {
 	padHash();
-	return HashAlgorithm::finish(src);
+	return HashAlgorithm::finish_clone(src);
 }

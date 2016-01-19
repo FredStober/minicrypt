@@ -23,7 +23,7 @@
 #include "Crypt.h"
 #include "Tiger.h"
 
-std::string tiger_ofb(const std::string &in, const std::string &key, std::string iv)
+static std::string tiger_ofb(const std::string &in, const std::string &key, std::string iv)
 {
 	const Hash *hash = 0;
 	Algorithm_Tiger tiger;
@@ -57,7 +57,7 @@ std::string tiger_ofb(const std::string &in, const std::string &key, std::string
 
 // hash' = hash(hash(value))
 // prevent direct access to hash(value) that gets used in first stage of block cipher
-const std::string hash_prime(const std::string &value)
+static const std::string hash_prime(const std::string &value)
 {
 	Algorithm_Tiger tiger;
 	const Hash *h0 = tiger.process(value)->finish();

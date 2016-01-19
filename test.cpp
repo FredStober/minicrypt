@@ -27,7 +27,7 @@
 #include <sstream>
 #include <iomanip>
 
-std::string hexify(const std::string &data)
+static const std::string hexify(const std::string &data)
 {
 	std::stringstream result;
 	for (std::size_t i = 0; i < data.size(); ++i)

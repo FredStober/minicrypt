@@ -1,7 +1,7 @@
 #ifndef I18N_H
 #define I18N_H
 
-#include <wx/intl.h>
+#include "wx_include.h"
 
 enum struct I18N_String
 {

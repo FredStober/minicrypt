@@ -24,21 +24,31 @@
 #include "HashTools.h"
 #include <cstring>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
 static class HashDescription_Tiger : public HashDescription
 {
-	virtual const std::size_t len() const
-	{
-		return 24;
-	}
-	virtual const std::string name() const
-	{
-		return "Tiger";
-	}
-	virtual class HashAlgorithm *algorithm() const
-	{
-		return new Algorithm_Tiger();
-	}
+	virtual std::size_t len() const override;
+	virtual const std::string name() const override;
+	virtual class HashAlgorithm *algorithm() const override;
 } Tiger_desc;
+#pragma clang diagnostic pop
+
+std::size_t HashDescription_Tiger::len() const
+{
+	return 24;
+}
+
+const std::string HashDescription_Tiger::name() const
+{
+	return "Tiger";
+}
+
+class HashAlgorithm *HashDescription_Tiger::algorithm() const
+{
+	return new Algorithm_Tiger();
+}
 
 /*
    Implementation of the TIGER Hash algorithm
@@ -672,7 +682,7 @@ HashAlgorithm *Algorithm_Tiger::clone() const
 
 const Hash *Algorithm_Tiger::finish()
 {
-	return PaddedHashAlgorithm::finish(&_hash);
+	return PaddedHashAlgorithm::finish_clone(&_hash);
 }
 
 const HashDescription *Algorithm_Tiger::id() const
@@ -696,15 +706,15 @@ void Algorithm_Tiger::padHash()
 	tiger_compress(buffer, _hash.internal);
 }
 
-const Hash *Algorithm_Tiger::parse(const uint8_t *buffer) const
+const Hash *Algorithm_Tiger::parse(const uint8_t *buf) const
 {
-	return new Algorithm_Tiger::Hash_Tiger(reinterpret_cast<const uint64_t*>(buffer));
+	return new Algorithm_Tiger::Hash_Tiger(reinterpret_cast<const uint64_t*>(buf));
 }
 
 const Hash *Algorithm_Tiger::parse(const std::string str) const
 {
 	Hash_Tiger *result = new Hash_Tiger;
-	if (!parseHex<24>(str, (uint8_t*)result->internal))
+	if (!parseHex<24>(str, reinterpret_cast<uint8_t*>(result->internal)))
 	{
 		delete result;
 		result = nullptr;
@@ -718,8 +728,9 @@ HashAlgorithm *Algorithm_Tiger::processBuffer(const uint8_t *input, const size_t
 	const uint8_t *inputEnd = input + length;
 
 	// Fill buffer up
-	while ((input < inputEnd) && (bufferOffset > 0) && (bufferOffset < TIGER_BLOCKSIZE))
-		buffer[bufferOffset++] = *(input++);
+	if (bufferOffset > 0)
+		while ((input < inputEnd) && (bufferOffset < TIGER_BLOCKSIZE))
+			buffer[bufferOffset++] = *(input++);
 	if (bufferOffset == TIGER_BLOCKSIZE)
 	{
 		tiger_compress(buffer, _hash.internal);
@@ -771,7 +782,7 @@ const Hash *Algorithm_Tiger::Hash_Tiger::clone() const
 
 const uint8_t *Algorithm_Tiger::Hash_Tiger::data() const
 {
-	return (uint8_t*)&internal;
+	return reinterpret_cast<const uint8_t*>(&internal);
 }
 
 const HashDescription *Algorithm_Tiger::Hash_Tiger::id() const
