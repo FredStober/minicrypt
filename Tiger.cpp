@@ -29,26 +29,24 @@
 #pragma clang diagnostic ignored "-Wexit-time-destructors"
 static class HashDescription_Tiger : public HashDescription
 {
-	virtual std::size_t len() const override;
-	virtual const std::string name() const override;
-	virtual class HashAlgorithm *algorithm() const override;
+public:
+	virtual ~HashDescription_Tiger() override;
+	virtual std::size_t len() const override
+	{
+		return 24;
+	}
+	virtual const std::string name() const override
+	{
+		return "Tiger";
+	}
+	virtual class HashAlgorithm *algorithm() const override
+	{
+		return new Algorithm_Tiger();
+	}
 } Tiger_desc;
 #pragma clang diagnostic pop
 
-std::size_t HashDescription_Tiger::len() const
-{
-	return 24;
-}
-
-const std::string HashDescription_Tiger::name() const
-{
-	return "Tiger";
-}
-
-class HashAlgorithm *HashDescription_Tiger::algorithm() const
-{
-	return new Algorithm_Tiger();
-}
+HashDescription_Tiger::~HashDescription_Tiger() {}
 
 /*
    Implementation of the TIGER Hash algorithm
