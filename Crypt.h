@@ -32,7 +32,7 @@ enum struct DecodeError
 	TAMPERED
 };
 
-std::string encode(const std::string &in, const std::string &key);
-std::string decode(const std::string &in, const std::string &key, DecodeError *err);
+std::string encode(const std::string &in, const std::string &key, const std::size_t intro_size = 3);
+std::string decode(const std::string &in, const std::string &key, DecodeError *err, const std::size_t intro_size = 3);
 
 #endif

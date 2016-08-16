@@ -68,51 +68,50 @@ static const std::string hash_prime(const std::string &value)
 	return result;
 }
 
-// message is prefixed by INTRO_SIZE bytes of: hash'(plaintext) ^ hash'(key) = intro
-static const std::size_t INTRO_SIZE = 3;
+// message is prefixed by intro_size bytes of: hash'(plaintext) ^ hash'(key) = intro
 
-// iv = hash'(plaintext) [truncated to INTRO_SIZE]
-// intro = hash'(key) ^ iv [truncated to INTRO_SIZE]
+// iv = hash'(plaintext) [truncated to intro_size]
+// intro = hash'(key) ^ iv [truncated to intro_size]
 // intro gives some protection to the key stream against known plaintext attacks
 // and decreases possiblity of message tampering
 
 // cur:  3 byte => 2^24 possible iv's => 4 byte header in base64
 // max: 24 byte = len(tiger_hash) => 2^192 possible iv's => 32 byte header in base64
 
-std::string encode(const std::string &in, const std::string &key)
+std::string encode(const std::string &in, const std::string &key, const std::size_t intro_size)
 {
 	if (in.size() == 0)
 		return "";
 
 	const std::string h_k = hash_prime(key);
 	const std::string h_p = hash_prime(in);
-	std::string intro(INTRO_SIZE, '\0');
-	for (size_t i = 0; i < INTRO_SIZE; ++i)
+	std::string intro(intro_size, '\0');
+	for (size_t i = 0; i < intro_size; ++i)
 		intro[i] = h_k.at(i) ^ h_p.at(i);
-	std::string iv = h_p.substr(0, INTRO_SIZE);
+	std::string iv = h_p.substr(0, intro_size);
 
 	return intro + tiger_ofb(in, key, iv);
 }
 
-std::string decode(const std::string &in, const std::string &key, DecodeError *err)
+std::string decode(const std::string &in, const std::string &key, DecodeError *err, const std::size_t intro_size)
 {
 	*err = DecodeError::NONE;
 	if (in.size() == 0)
 		return "";
-	else if (in.size() < INTRO_SIZE)
+	else if (in.size() < intro_size)
 	{
 		*err = DecodeError::TOO_SHORT;
 		return "";
 	}
 
 	const std::string h_k = hash_prime(key);
-	std::string iv(in.substr(0, INTRO_SIZE), '\0');
-	for (size_t i = 0; i < INTRO_SIZE; ++i)
+	std::string iv(in.substr(0, intro_size), '\0');
+	for (size_t i = 0; i < intro_size; ++i)
 		iv[i] ^= h_k.at(i);
 
-	const std::string out = tiger_ofb(in.substr(INTRO_SIZE), key, iv);
+	const std::string out = tiger_ofb(in.substr(intro_size), key, iv);
 	// notify about message tampering
-	if (iv != hash_prime(out).substr(0, INTRO_SIZE))
+	if (iv != hash_prime(out).substr(0, intro_size))
 	{
 		*err = DecodeError::TAMPERED;
 		return "";
