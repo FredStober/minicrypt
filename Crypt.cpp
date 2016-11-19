@@ -21,37 +21,32 @@
  */
 
 #include "Crypt.h"
-#include "Tiger.h"
+#include "tiger_hash.hpp"
 
 static std::string tiger_ofb(const std::string &in, const std::string &key, std::string iv)
 {
-	const Hash *hash = 0;
-	Algorithm_Tiger tiger;
-	const std::size_t CRYPT_BLOCK_SIZE = tiger.id()->len();
-
+	Hash::tiger_algorithm_t tiger;
+	Hash::tiger_hash_t hash;
 	std::string result(in);
 	for (std::size_t i = 0; i < in.size(); ++i)
 	{
-		const std::size_t hash_idx = i % CRYPT_BLOCK_SIZE;
+		const std::size_t hash_idx = i % tiger.block_size;
 		// generate key block
-		if ((i % CRYPT_BLOCK_SIZE) == 0)
+		if (hash_idx == 0)
 		{
 			// (1st block) iv = hash'(plaintext); (nth block) iv = previous key block
-			tiger.process(iv + "\n");
+			tiger.update(iv + "\n");
 			// key - user input
-			tiger.process(key + "\n");
+			tiger.update(key + "\n");
 			// prevent key block repeats (probably impossible anyway)
-			tiger.process(std::to_string(i) + "\n");
+			tiger.update(std::to_string(i) + "\n");
 			// make key stream unique with respect to message length
-			tiger.process(std::to_string(in.size()) + "\n");
-			if (hash)
-				delete hash;
-			hash = tiger.finish();
-			iv = hash->str();
+			tiger.update(std::to_string(in.size()) + "\n");
+			hash = tiger.get_digest();
+			iv = std::string(hash.digest.data(), hash.digest.size());
 		}
-		result[i] ^= (hash->data()[hash_idx]);
+		result[i] ^= hash.digest[hash_idx];
 	}
-	delete hash;
 	return result;
 }
 
@@ -59,13 +54,9 @@ static std::string tiger_ofb(const std::string &in, const std::string &key, std:
 // prevent direct access to hash(value) that gets used in first stage of block cipher
 static const std::string hash_prime(const std::string &value)
 {
-	Algorithm_Tiger tiger;
-	const Hash *h0 = tiger.process(value)->finish();
-	const Hash *hp = tiger.process(h0->str())->finish();
-	delete h0;
-	const std::string result(reinterpret_cast<const char*>(hp->data()), hp->id()->len());
-	delete hp;
-	return result;
+	Hash::tiger_hash_t h0 = Hash::tiger_algorithm_t(value).get_digest();
+	Hash::tiger_hash_t hp = Hash::tiger_algorithm_t(Hash::to_string(h0)).get_digest();
+	return std::string(hp.digest.data(), hp.digest.size());
 }
 
 // message is prefixed by intro_size bytes of: hash'(plaintext) ^ hash'(key) = intro
